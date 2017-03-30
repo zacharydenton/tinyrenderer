@@ -1,20 +1,23 @@
 #ifndef __MODEL_H__
 #define __MODEL_H__
 
+#include <string>
 #include <vector>
 #include "geometry.h"
 
+using namespace std;
+
 class Model {
 private:
-	std::vector<Vec3f> verts_;
-	std::vector<std::vector<int> > faces_;
+	vector<Vec3f> verts_;
+	vector<vector<int> > faces_;
 public:
-	Model(const char *filename);
+	Model(const string filename);
 	~Model();
 	int nverts();
 	int nfaces();
 	Vec3f vert(int i);
-	std::vector<int> face(int idx);
+	vector<int> face(int idx);
 };
 
 #endif //__MODEL_H__
