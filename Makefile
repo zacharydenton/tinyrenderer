@@ -11,10 +11,10 @@ OBJECTS := $(patsubst %.cpp,%.o,$(wildcard *.cpp))
 all: $(DESTDIR)$(TARGET)
 
 $(DESTDIR)$(TARGET): $(OBJECTS)
-	$(SYSCONF_LINK) -Wall $(LDFLAGS) -o $(DESTDIR)$(TARGET) $(OBJECTS) $(LIBS)
+	$(SYSCONF_LINK) -std=c++17 -march=native -Ofast -Wall $(LDFLAGS) -o $(DESTDIR)$(TARGET) $(OBJECTS) $(LIBS)
 
 $(OBJECTS): %.o: %.cpp
-	$(SYSCONF_LINK) -Wall $(CPPFLAGS) -c $(CFLAGS) $< -o $@
+	$(SYSCONF_LINK) -std=c++17 -march=native -Ofast -Wall $(CPPFLAGS) -c $(CFLAGS) $< -o $@
 
 clean:
 	-rm -f $(OBJECTS)
