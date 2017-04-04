@@ -152,24 +152,19 @@ void draw_model(const string filename, TGAImage &image)
   Model model(filename);
   for (auto i = 0; i < model.nfaces(); i++) { 
     vector<int> face = model.face(i); 
-    for (auto j = 0; j < 3; j++) { 
-      Vec3f v0 = model.vert(face[j]); 
-      Vec3f v1 = model.vert(face[(j+1)%3]); 
-      int x0 = (v0.x+1.)*width/2.; 
-      int y0 = (v0.y+1.)*height/2.; 
-      int x1 = (v1.x+1.)*width/2.; 
-      int y1 = (v1.y+1.)*height/2.; 
-      line(Vec2i(x0, y0), Vec2i(x1, y1), image, white); 
+    vector<Vec2i> screen_coords{3};
+    for (int j=0; j<3; j++) { 
+      Vec3f world_coords = model.vert(face[j]); 
+      screen_coords[j] = Vec2i((world_coords.x+1.)*width/2., (world_coords.y+1.)*height/2.); 
     } 
+    triangle(screen_coords, image, white);
   }
 }
 
 int main(int argc, char** argv)
 {
   TGAImage image(width, height, TGAImage::RGB);
-  //draw_model("obj/african_head.obj", image);
-  vector<Vec2i> pts = {Vec2i(10,10), Vec2i(100, 30), Vec2i(190, 160)}; 
-  triangle(pts, image, red);
+  draw_model("obj/african_head.obj", image);
   image.flip_vertically();
   image.write_tga_file("output.tga");
   return 0;
