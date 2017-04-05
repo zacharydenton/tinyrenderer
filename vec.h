@@ -67,6 +67,13 @@ template <class T> class Vec3 {
     {
       return Vec3<T>(x / v, y / v, z / v);
     }
+
+    constexpr T operator [](const int &i)
+    {
+      if (i == 0) return x;
+      else if (i == 1) return y;
+      else return z;
+    }
 };
 
 template <class T> class Vec2 {

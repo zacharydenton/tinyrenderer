@@ -1,3 +1,4 @@
+#include <limits>
 #include <string>
 #include <vector>
 #include <iostream>
@@ -123,23 +124,49 @@ vec3 barycentric(vector<vec2i> pts, vec2i P) {
   return vec3(1 - (u.x + u.y) / u.z, u.y / u.z, u.x / u.z);
 }
 
-void triangle(vector<vec2i> pts, TGAImage &image, TGAColor color)
+vec3 barycentric(vec3 A, vec3 B, vec3 C, vec3 P) {
+    vec3 s[2];
+    for (int i=2; i--; ) {
+        s[i].x = C[i]-A[i];
+        s[i].y = B[i]-A[i];
+        s[i].z = A[i]-P[i];
+    }
+    vec3 u = s[0] ^ s[1];
+    if (abs(u[2]) > 1e-2) {
+        return vec3(1.f-(u.x+u.y)/u.z, u.y/u.z, u.x/u.z);
+    }
+    return vec3(-1,1,1);
+}
+
+vec3 world2screen(const vec3 &v) {
+  return vec3(int((v.x+1.)*width/2.+.5), int((v.y+1.)*height/2.+.5), v.z);
+}
+
+void triangle(vector<vec3> pts, vector<double> &zbuffer, TGAImage &image, TGAColor color)
 {
-  vec2i bboxmin(image.get_width() - 1, image.get_height() - 1);
-  vec2i bboxmax(0, 0);
-  vec2i clamp(image.get_width() - 1, image.get_height() - 1);
+  vec2 bboxmin(numeric_limits<double>::max(), numeric_limits<double>::max());
+  vec2 bboxmax(-numeric_limits<double>::max(), -numeric_limits<double>::max());
+  vec2 clamp(image.get_width() - 1, image.get_height() - 1);
   for (auto i = 0; i < 3; i++) {
-    bboxmin.x = max(0, min(bboxmin.x, pts[i].x));
+    bboxmin.x = max(0., min(bboxmin.x, pts[i].x));
     bboxmax.x = min(clamp.x, max(bboxmax.x, pts[i].x));
-    bboxmin.y = max(0, min(bboxmin.y, pts[i].y));
+    bboxmin.y = max(0., min(bboxmin.y, pts[i].y));
     bboxmax.y = min(clamp.y, max(bboxmax.y, pts[i].y));
   }
-  vec2i P;
+  vec3 P;
   for (P.x = bboxmin.x; P.x <= bboxmax.x; P.x++) {
     for (P.y = bboxmin.y; P.y <= bboxmax.y; P.y++) {
-      vec3 bc_screen = barycentric(pts, P);
+      vec3 bc_screen = barycentric(pts[0], pts[1], pts[2], P);
       if (bc_screen.x < 0 || bc_screen.y < 0 || bc_screen.z < 0) continue;
-      image.set(P.x, P.y, color);
+      P.z = 0;
+      for (auto i = 0; i < 3; i++) {
+        P.z += pts[i].z * bc_screen[i];
+      }
+      auto z_idx = int(P.y * image.get_width() + P.x);
+      if (zbuffer[z_idx] < P.z) {
+        zbuffer[z_idx] = P.z;
+        image.set(P.x, P.y, color);
+      }
     }
   }
 }
@@ -152,22 +179,23 @@ void line(vec2 start, vec2 end, TGAImage &image, TGAColor color)
 void draw_model(const string &filename, TGAImage &image)
 {
   Model model(filename);
+  vector<double> zbuffer(image.get_width() * image.get_height());
+  fill(zbuffer.begin(), zbuffer.end(), -numeric_limits<double>::max());
   auto light_dir = vec3(0, 0, -1);
   for (auto i = 0; i < model.nfaces(); i++) {
     auto face = model.face(i);
-    vector<vec2i> screen_coords{3};
+    vector<vec3> screen_coords{3};
     vector<vec3> world_coords{3};
     for (auto j = 0; j < 3; j++) {
       auto v = model.vert(face[j]);
-      screen_coords[j] = vec2i((v.x + 1) * width / 2,
-                               (v.y + 1) * height / 2);
+      screen_coords[j] = world2screen(v);
       world_coords[j] = v;
     }
     vec3 n = (world_coords[2] - world_coords[0]) ^ (world_coords[1] - world_coords[0]);
     n.normalize();
     auto intensity = n * light_dir;
     if (intensity > 0) {
-      triangle(screen_coords, image, red * intensity);
+      triangle(screen_coords, zbuffer, image, red * intensity);
     }
   }
 }
