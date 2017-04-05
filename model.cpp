@@ -19,8 +19,10 @@ Model::Model(const string filename) : verts_(), faces_() {
         char trash;
         if (!line.compare(0, 2, "v ")) {
             iss >> trash;
-            Vec3f v;
-            for (int i=0;i<3;i++) iss >> v.raw[i];
+            vec3 v;
+            iss >> v.x;
+            iss >> v.y;
+            iss >> v.z;
             verts_.push_back(v);
         } else if (!line.compare(0, 2, "f ")) {
             vector<int> f;
@@ -51,7 +53,7 @@ vector<int> Model::face(int idx) {
     return faces_[idx];
 }
 
-Vec3f Model::vert(int i) {
+vec3 Model::vert(int i) {
     return verts_[i];
 }
 
